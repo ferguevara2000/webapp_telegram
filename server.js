@@ -105,7 +105,52 @@ app.post('/images', (req, res) => {
     });
 });
 
+// Ruta para actualizar una imagen existente
+app.put('/images/:id', (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    const { url } = req.body;
+
+    if (!url) {
+        return res.status(400).json({ message: 'El campo "url" es requerido.' });
+    }
+
+    fs.readFile('./database.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error al leer la base de datos:', err);
+            return res.status(500).json({ message: 'Error interno del servidor' });
+        }
+
+        let images = [];
+        try {
+            images = JSON.parse(data) || [];
+        } catch (e) {
+            console.warn('El archivo JSON estaba vacío o malformado.');
+            images = [];
+        }
+
+        // Encontrar la imagen por ID
+        const imageIndex = images.findIndex(img => img.id === id);
+
+        if (imageIndex === -1) {
+            return res.status(404).json({ message: 'Imagen no encontrada.' });
+        }
+
+        // Actualizar la URL de la imagen
+        images[imageIndex].url = url;
+
+        // Guardar los cambios en el archivo JSON
+        fs.writeFile('./database.json', JSON.stringify(images, null, 2), 'utf8', (writeErr) => {
+            if (writeErr) {
+                console.error('Error al escribir en la base de datos:', writeErr);
+                return res.status(500).json({ message: 'Error interno del servidor' });
+            }
+
+            res.json({ message: 'Imagen actualizada correctamente.', image: images[imageIndex] });
+        });
+    });
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+    console.log(`Servidor ejecutándose en el puerto: ${PORT}`);
 });
